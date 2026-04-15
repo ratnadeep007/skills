@@ -7,13 +7,10 @@ A collection of reusable AI agent skills that work across Claude Code, Cursor, W
 A skill is a directory containing a `SKILL.md` file that teaches an AI agent how to perform a specialized task. When you invoke a skill, the agent reads `SKILL.md` and follows the instructions inside — no plugins, no extensions, just a file the agent reads.
 
 ```
-python-code-reviewer/
-├── SKILL.md          ← instructions the agent reads and follows
-├── scripts/          ← helper scripts (optional)
-│   ├── analyze_diff.py
-│   └── trace_callers.py
-└── references/       ← reference material the skill uses
-    └── breakage_patterns.md
+<skill-name>/          ← e.g. python-code-reviewer, golang-code-review
+├── SKILL.md           ← instructions the agent reads and follows
+├── scripts/           ← helper scripts (optional)
+└── references/        ← reference material (optional)
 ```
 
 ## Skills in this Repo
@@ -21,6 +18,7 @@ python-code-reviewer/
 | Skill | Description |
 |-------|-------------|
 | [`python-code-reviewer`](./python-code-reviewer/) | Deep Python breakage analysis — traces call graphs, signatures, and import trees across a diff to surface runtime risks before merge |
+| [`golang-code-review`](./golang-code-review/) | Deep Go breakage analysis — traces call graphs, interfaces, struct usages, and imports across a diff; optional `go build` / `go vet` hooks for compile-time checks |
 
 ---
 
@@ -34,8 +32,9 @@ Skills need to be placed in the directory your agent reads from. Each agent has 
 # Clone the repo
 git clone https://github.com/<your-username>/skills.git ~/skills-repo
 
-# Copy the skill to Claude's skills directory
+# Copy one skill (folder name in the repo → install name you prefer)
 cp -r ~/skills-repo/python-code-reviewer ~/.claude/skills/python-code-review
+cp -r ~/skills-repo/golang-code-review ~/.claude/skills/golang-code-review
 ```
 
 Claude Code reads skills from `~/.claude/skills/<skill-name>/SKILL.md`.
@@ -52,8 +51,8 @@ done
 ### Cursor
 
 ```bash
-# Copy to Cursor's skills directory
 cp -r ~/skills-repo/python-code-reviewer ~/.cursor/skills-cursor/python-code-review
+cp -r ~/skills-repo/golang-code-review ~/.cursor/skills-cursor/golang-code-review
 ```
 
 Cursor reads skills from `~/.cursor/skills-cursor/<skill-name>/SKILL.md`.
@@ -62,18 +61,21 @@ Cursor reads skills from `~/.cursor/skills-cursor/<skill-name>/SKILL.md`.
 
 ```bash
 cp -r ~/skills-repo/python-code-reviewer ~/.windsurf/skills/python-code-review
+cp -r ~/skills-repo/golang-code-review ~/.windsurf/skills/golang-code-review
 ```
 
 ### OpenCode / Codex CLI
 
 ```bash
 cp -r ~/skills-repo/python-code-reviewer ~/.opencode/skills/python-code-review
+cp -r ~/skills-repo/golang-code-review ~/.opencode/skills/golang-code-review
 ```
 
 ### Gemini CLI
 
 ```bash
 cp -r ~/skills-repo/python-code-reviewer ~/.gemini/skills/python-code-review
+cp -r ~/skills-repo/golang-code-review ~/.gemini/skills/golang-code-review
 ```
 
 > **Note:** Skill directory paths vary by agent version. If the path above doesn't work, check your agent's documentation for where it reads custom skills or prompts.
@@ -88,14 +90,16 @@ To update a skill to the latest version from this repo:
 # Pull latest changes
 cd ~/skills-repo && git pull
 
-# Re-copy updated skill (overwrites previous)
+# Re-copy updated skills (overwrites previous)
 cp -r ~/skills-repo/python-code-reviewer ~/.claude/skills/python-code-review
+cp -r ~/skills-repo/golang-code-review ~/.claude/skills/golang-code-review
 ```
 
 Or keep the repo as the source of truth by symlinking instead of copying:
 
 ```bash
 ln -sf ~/skills-repo/python-code-reviewer ~/.claude/skills/python-code-review
+ln -sf ~/skills-repo/golang-code-review ~/.claude/skills/golang-code-review
 ```
 
 With a symlink, `git pull` in the repo automatically updates the live skill — no re-copy needed.
@@ -108,12 +112,14 @@ Once installed, invoke a skill by name in your agent's chat:
 
 ```
 /python-code-review
+/golang-code-review
 ```
 
 Or describe what you want and the agent will pick it up automatically:
 
 ```
 review my changes for anything that could break
+review my Go diff for breaking API changes
 ```
 
 Agents that support skill auto-detection (Claude Code, Cursor) will match the skill's trigger phrases defined in `SKILL.md` and invoke it without an explicit slash command.
@@ -126,6 +132,10 @@ Most skills accept arguments after the slash command:
 /python-code-review --base origin/main
 /python-code-review --file /tmp/my.diff
 /python-code-review --help
+
+/golang-code-review --base origin/main --build --vet
+/golang-code-review --file /tmp/pr.diff
+/golang-code-review --help
 ```
 
 ---
